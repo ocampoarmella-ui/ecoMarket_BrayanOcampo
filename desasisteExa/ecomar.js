@@ -1,65 +1,76 @@
-// Configuración de Supabase
-const SUPABASE_URL = 'https://yqguocgcrycdhmyzpohm.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxZ3VvY2djcnljZGhteXpwb2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMTUyNDEsImV4cCI6MjA3MzY5MTI0MX0.LecKhUPegIviHlnM4bYNKdO5lh4DaU-XD5-LoH1zIkU';
-
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-// Estado de la aplicación
-let currentUser = null;
-let currentRole = null;
+// Estado de la aplicación (sin autenticación)
 let currentView = 'products';
 let editingProductId = null;
 let orderItems = [];
 
-// Inicializar la aplicación
-document.addEventListener('DOMContentLoaded', async () => {
-    await checkSession();
-    setupEventListeners();
-});
+// Datos en memoria
+let products = [
+    { id: 1, nombre: 'Manzanas Orgánicas', descripcion: 'Manzanas frescas cultivadas sin pesticidas', precio: 3.50 },
+    { id: 2, nombre: 'Tomates Cherry', descripcion: 'Tomates cherry orgánicos de invernadero', precio: 4.20 },
+    { id: 3, nombre: 'Lechuga Hidropónica', descripcion: 'Lechuga fresca cultivada hidropónicamente', precio: 2.80 },
+    { id: 4, nombre: 'Zanahorias Orgánicas', descripcion: 'Zanahorias cultivadas sin químicos', precio: 2.50 },
+    { id: 5, nombre: 'Espinacas Frescas', descripcion: 'Espinacas orgánicas recién cosechadas', precio: 3.00 }
+];
 
-// Verificar sesión
-async function checkSession() {
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (session?.user) {
-        const { data: vendorData } = await supabase
-            .from('VENDEDOR_EM')
-            .select('*')
-            .eq('USER_ID', session.user.id)
-            .single();
+let clients = [
+    { id: 1, nombre: 'Juan', apellido: 'Pérez', telefono: '555-0101' },
+    { id: 2, nombre: 'María', apellido: 'González', telefono: '555-0102' },
+    { id: 3, nombre: 'Carlos', apellido: 'Rodríguez', telefono: '555-0103' },
+    { id: 4, nombre: 'Ana', apellido: 'Martínez', telefono: '555-0104' }
+];
 
-        if (vendorData) {
-            currentUser = session.user;
-            currentRole = vendorData.ROLE;
-            showMainScreen();
-        } else {
-            showLoginScreen();
-        }
-    } else {
-        showLoginScreen();
+let orders = [
+    {
+        id: 1,
+        clienteId: 1,
+        clienteNombre: 'Juan Pérez',
+        total: 15.40,
+        fechaPedido: '2025-10-20T10:30:00',
+        detalles: [
+            { productoId: 1, productoNombre: 'Manzanas Orgánicas', cantidad: 2, precioUnitario: 3.50, total: 7.00 },
+            { productoId: 2, productoNombre: 'Tomates Cherry', cantidad: 2, precioUnitario: 4.20, total: 8.40 }
+        ]
+    },
+    {
+        id: 2,
+        clienteId: 2,
+        clienteNombre: 'María González',
+        total: 11.30,
+        fechaPedido: '2025-10-21T14:15:00',
+        detalles: [
+            { productoId: 3, productoNombre: 'Lechuga Hidropónica', cantidad: 1, precioUnitario: 2.80, total: 2.80 },
+            { productoId: 4, productoNombre: 'Zanahorias Orgánicas', cantidad: 2, precioUnitario: 2.50, total: 5.00 },
+            { productoId: 5, productoNombre: 'Espinacas Frescas', cantidad: 1, precioUnitario: 3.00, total: 3.00 }
+        ]
+    },
+    {
+        id: 3,
+        clienteId: 3,
+        clienteNombre: 'Carlos Rodríguez',
+        total: 18.60,
+        fechaPedido: '2025-10-22T09:45:00',
+        detalles: [
+            { productoId: 1, productoNombre: 'Manzanas Orgánicas', cantidad: 3, precioUnitario: 3.50, total: 10.50 },
+            { productoId: 2, productoNombre: 'Tomates Cherry', cantidad: 1, precioUnitario: 4.20, total: 4.20 },
+            { productoId: 5, productoNombre: 'Espinacas Frescas', cantidad: 1, precioUnitario: 3.00, total: 3.00 }
+        ]
     }
-}
+];
+
+let vendors = [
+    { id: 1, nombre: 'Admin Principal', email: 'admin@ecomarket.com', role: 'admin' },
+    { id: 2, nombre: 'Pedro Sánchez', email: 'pedro@ecomarket.com', role: 'vendedor' },
+    { id: 3, nombre: 'Laura Torres', email: 'laura@ecomarket.com', role: 'vendedor' }
+];
+
+// Inicializar la aplicación
+document.addEventListener('DOMContentLoaded', () => {
+    setupEventListeners();
+    loadProducts();
+});
 
 // Event Listeners
 function setupEventListeners() {
-    // Login Tabs
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const tab = btn.dataset.tab;
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            btn.classList.add('active');
-            document.getElementById(`${tab}-form`).classList.add('active');
-        });
-    });
-
-    // Login Form
-    document.getElementById('login-form').addEventListener('submit', handleLogin);
-    document.getElementById('register-form').addEventListener('submit', handleRegister);
-
-    // Logout
-    document.getElementById('logout-btn').addEventListener('click', handleLogout);
-
     // Navigation
     document.querySelectorAll('.nav-item').forEach(item => {
         item.addEventListener('click', () => {
@@ -95,111 +106,6 @@ function setupEventListeners() {
     document.getElementById('vendor-form').addEventListener('submit', handleVendorSubmit);
 }
 
-// Login
-async function handleLogin(e) {
-    e.preventDefault();
-    const email = document.getElementById('login-email').value;
-    const password = document.getElementById('login-password').value;
-    const errorDiv = document.getElementById('login-error');
-
-    try {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        
-        if (error) throw error;
-
-        if (data.user) {
-            const { data: vendorData, error: vendorError } = await supabase
-                .from('VENDEDOR_EM')
-                .select('*')
-                .eq('USER_ID', data.user.id)
-                .single();
-
-            if (vendorError) {
-                errorDiv.textContent = 'Usuario no encontrado en el sistema';
-                errorDiv.classList.add('show');
-                await supabase.auth.signOut();
-            } else {
-                currentUser = data.user;
-                currentRole = vendorData.ROLE;
-                showMainScreen();
-            }
-        }
-    } catch (err) {
-        errorDiv.textContent = err.message || 'Error al iniciar sesión';
-        errorDiv.classList.add('show');
-    }
-}
-
-// Register
-async function handleRegister(e) {
-    e.preventDefault();
-    const name = document.getElementById('register-name').value;
-    const email = document.getElementById('register-email').value;
-    const password = document.getElementById('register-password').value;
-    const errorDiv = document.getElementById('register-error');
-
-    try {
-        const { data, error } = await supabase.auth.signUp({ email, password });
-        
-        if (error) throw error;
-
-        if (data.user) {
-            const { error: vendorError } = await supabase
-                .from('VENDEDOR_EM')
-                .insert([{
-                    USER_ID: data.user.id,
-                    NOMBRE: name,
-                    EMAIL: email,
-                    ROLE: 'vendedor'
-                }]);
-
-            if (vendorError) throw vendorError;
-
-            alert('Registro exitoso. Por favor inicia sesión.');
-            document.querySelector('[data-tab="login"]').click();
-            document.getElementById('register-form').reset();
-        }
-    } catch (err) {
-        errorDiv.textContent = err.message || 'Error al registrarse';
-        errorDiv.classList.add('show');
-    }
-}
-
-// Logout
-async function handleLogout() {
-    await supabase.auth.signOut();
-    currentUser = null;
-    currentRole = null;
-    showLoginScreen();
-}
-
-// Show/Hide Screens
-function showLoginScreen() {
-    document.getElementById('login-screen').classList.add('active');
-    document.getElementById('main-screen').classList.remove('active');
-}
-
-function showMainScreen() {
-    document.getElementById('login-screen').classList.remove('active');
-    document.getElementById('main-screen').classList.add('active');
-    document.getElementById('user-email').textContent = currentUser.email;
-    document.getElementById('user-role-text').textContent = 
-        currentRole === 'admin' ? 'Panel Administrador' : 'Panel Vendedor';
-    
-    // Show/Hide admin elements
-    if (currentRole === 'admin') {
-        document.querySelectorAll('.admin-only').forEach(el => {
-            el.style.display = '';
-        });
-    } else {
-        document.querySelectorAll('.admin-only').forEach(el => {
-            el.style.display = 'none';
-        });
-    }
-
-    loadProducts();
-}
-
 // Switch View
 function switchView(view) {
     currentView = view;
@@ -207,6 +113,9 @@ function switchView(view) {
     document.querySelector(`[data-view="${view}"]`).classList.add('active');
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById(`${view}-view`).classList.add('active');
+
+    // Close mobile menu
+    document.getElementById('sidebar').classList.remove('show');
 
     // Load data based on view
     switch(view) {
@@ -220,43 +129,33 @@ function switchView(view) {
             loadOrders();
             break;
         case 'vendors':
-            if (currentRole === 'admin') loadVendors();
+            loadVendors();
             break;
         case 'reports':
-            if (currentRole === 'admin') loadReports();
+            loadReports();
             break;
     }
 }
 
 // ============ PRODUCTS ============
-async function loadProducts() {
-    const { data, error } = await supabase
-        .from('PRODUCTO_EM')
-        .select('*')
-        .order('ID', { ascending: true });
-
+function loadProducts() {
     const container = document.getElementById('products-list');
     
-    if (error) {
-        container.innerHTML = '<div class="empty-state">Error al cargar productos</div>';
-        return;
-    }
-
-    if (!data || data.length === 0) {
+    if (products.length === 0) {
         container.innerHTML = '<div class="empty-state">No hay productos registrados</div>';
         return;
     }
 
-    container.innerHTML = data.map(product => `
+    container.innerHTML = products.map(product => `
         <div class="product-card">
             <div class="product-header">
-                <div class="product-name">${product.NOMBRE}</div>
-                <div class="product-price">$${parseFloat(product.PRECIO).toFixed(2)}</div>
+                <div class="product-name">${product.nombre}</div>
+                <div class="product-price">$${parseFloat(product.precio).toFixed(2)}</div>
             </div>
-            <div class="product-description">${product.DESCRIPCION || ''}</div>
+            <div class="product-description">${product.descripcion || ''}</div>
             <div class="product-actions">
-                <button class="btn btn-sm btn-outline" onclick="editProduct(${product.ID})">✏️ Editar</button>
-                <button class="btn btn-sm btn-danger" onclick="deleteProduct(${product.ID})">🗑️ Eliminar</button>
+                <button class="btn btn-sm btn-outline" onclick="editProduct(${product.id})">✏️ Editar</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteProduct(${product.id})">🗑️ Eliminar</button>
             </div>
         </div>
     `).join('');
@@ -274,102 +173,67 @@ function hideProductForm() {
     editingProductId = null;
 }
 
-async function handleProductSubmit(e) {
+function handleProductSubmit(e) {
     e.preventDefault();
     
     const productData = {
-        NOMBRE: document.getElementById('product-name').value,
-        DESCRIPCION: document.getElementById('product-description').value,
-        PRECIO: parseFloat(document.getElementById('product-price').value)
+        nombre: document.getElementById('product-name').value,
+        descripcion: document.getElementById('product-description').value,
+        precio: parseFloat(document.getElementById('product-price').value)
     };
 
     if (editingProductId) {
-        const { error } = await supabase
-            .from('PRODUCTO_EM')
-            .update(productData)
-            .eq('ID', editingProductId);
-
-        if (error) {
-            alert('Error al actualizar producto: ' + error.message);
-        } else {
-            alert('Producto actualizado exitosamente');
-            hideProductForm();
-            loadProducts();
+        const index = products.findIndex(p => p.id === editingProductId);
+        if (index !== -1) {
+            products[index] = { ...productData, id: editingProductId };
         }
+        alert('Producto actualizado exitosamente');
     } else {
-        const { error } = await supabase
-            .from('PRODUCTO_EM')
-            .insert([productData]);
-
-        if (error) {
-            alert('Error al crear producto: ' + error.message);
-        } else {
-            alert('Producto creado exitosamente');
-            hideProductForm();
-            loadProducts();
-        }
+        const newId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1;
+        products.push({ ...productData, id: newId });
+        alert('Producto creado exitosamente');
     }
+
+    hideProductForm();
+    loadProducts();
 }
 
-async function editProduct(id) {
-    const { data } = await supabase
-        .from('PRODUCTO_EM')
-        .select('*')
-        .eq('ID', id)
-        .single();
-
-    if (data) {
-        document.getElementById('product-name').value = data.NOMBRE;
-        document.getElementById('product-description').value = data.DESCRIPCION || '';
-        document.getElementById('product-price').value = data.PRECIO;
+function editProduct(id) {
+    const product = products.find(p => p.id === id);
+    if (product) {
+        document.getElementById('product-name').value = product.nombre;
+        document.getElementById('product-description').value = product.descripcion || '';
+        document.getElementById('product-price').value = product.precio;
         document.getElementById('product-form-title').textContent = 'Editar Producto';
         document.getElementById('product-form-container').classList.remove('hidden');
         editingProductId = id;
     }
 }
 
-async function deleteProduct(id) {
+function deleteProduct(id) {
     if (confirm('¿Estás seguro de eliminar este producto?')) {
-        const { error } = await supabase
-            .from('PRODUCTO_EM')
-            .delete()
-            .eq('ID', id);
-
-        if (error) {
-            alert('Error al eliminar producto: ' + error.message);
-        } else {
-            alert('Producto eliminado exitosamente');
-            loadProducts();
-        }
+        products = products.filter(p => p.id !== id);
+        alert('Producto eliminado exitosamente');
+        loadProducts();
     }
 }
 
 // ============ CLIENTS ============
-async function loadClients() {
-    const { data, error } = await supabase
-        .from('CLIENTE_EM')
-        .select('*')
-        .order('ID', { ascending: false });
-
+function loadClients() {
     const container = document.getElementById('clients-list');
     
-    if (error) {
-        container.innerHTML = '<div class="empty-state">Error al cargar clientes</div>';
-        return;
-    }
-
-    if (!data || data.length === 0) {
+    if (clients.length === 0) {
         container.innerHTML = '<div class="empty-state">No hay clientes registrados</div>';
         return;
     }
 
-    container.innerHTML = data.map(client => `
+    container.innerHTML = clients.map(client => `
         <div class="client-card">
             <div class="client-icon">👤</div>
             <div class="client-info">
-                <h3>${client.NOMBRE} ${client.APELLIDO}</h3>
-                <p>${client.TELEFONO || 'Sin teléfono'}</p>
-                <div class="client-id">ID: ${client.ID}</div>
+                <h3>${client.nombre} ${client.apellido}</h3>
+                <p>${client.telefono || 'Sin teléfono'}</p>
+                <div class="client-id">ID: ${client.id}</div>
             </div>
         </div>
     `).join('');
@@ -384,62 +248,40 @@ function hideClientForm() {
     document.getElementById('client-form').reset();
 }
 
-async function handleClientSubmit(e) {
+function handleClientSubmit(e) {
     e.preventDefault();
     
     const clientData = {
-        NOMBRE: document.getElementById('client-name').value,
-        APELLIDO: document.getElementById('client-lastname').value,
-        TELEFONO: document.getElementById('client-phone').value
+        nombre: document.getElementById('client-name').value,
+        apellido: document.getElementById('client-lastname').value,
+        telefono: document.getElementById('client-phone').value
     };
 
-    const { error } = await supabase
-        .from('CLIENTE_EM')
-        .insert([clientData]);
+    const newId = clients.length > 0 ? Math.max(...clients.map(c => c.id)) + 1 : 1;
+    clients.push({ ...clientData, id: newId });
 
-    if (error) {
-        alert('Error al registrar cliente: ' + error.message);
-    } else {
-        alert('Cliente registrado exitosamente');
-        hideClientForm();
-        loadClients();
-    }
+    alert('Cliente registrado exitosamente');
+    hideClientForm();
+    loadClients();
 }
 
 // ============ ORDERS ============
-async function loadOrders() {
-    const { data, error } = await supabase
-        .from('PEDIDO_EM')
-        .select(`
-            *,
-            CLIENTE_EM (NOMBRE, APELLIDO),
-            DETALLE_PEDIDO_EM (
-                *,
-                PRODUCTO_EM (NOMBRE)
-            )
-        `)
-        .order('ID', { ascending: false });
-
+function loadOrders() {
     const container = document.getElementById('orders-list');
     
-    if (error) {
-        container.innerHTML = '<div class="empty-state">Error al cargar pedidos</div>';
-        return;
-    }
-
-    if (!data || data.length === 0) {
+    if (orders.length === 0) {
         container.innerHTML = '<div class="empty-state">No hay pedidos registrados</div>';
         return;
     }
 
-    container.innerHTML = data.map(order => {
-        const details = order.DETALLE_PEDIDO_EM || [];
+    container.innerHTML = orders.map(order => {
+        const details = order.detalles || [];
         const detailsHtml = details.length > 0 ? `
             <div class="order-items">
                 <p>Productos:</p>
                 <ul>
                     ${details.map(d => `
-                        <li>• ${d.PRODUCTO_EM?.NOMBRE || 'Desconocido'} (x${d.CANTIDAD}) - $${parseFloat(d.TOTAL).toFixed(2)}</li>
+                        <li>• ${d.productoNombre || 'Desconocido'} (x${d.cantidad}) - $${parseFloat(d.total).toFixed(2)}</li>
                     `).join('')}
                 </ul>
             </div>
@@ -451,11 +293,11 @@ async function loadOrders() {
                 <div class="order-content">
                     <div class="order-header">
                         <div>
-                            <div class="order-title">Pedido #${order.ID}</div>
-                            <div class="order-client">Cliente: ${order.CLIENTE_EM?.NOMBRE || ''} ${order.CLIENTE_EM?.APELLIDO || ''}</div>
-                            <div class="order-date">Fecha: ${new Date(order.FECHAPEDIDO).toLocaleString('es-ES')}</div>
+                            <div class="order-title">Pedido #${order.id}</div>
+                            <div class="order-client">Cliente: ${order.clienteNombre || ''}</div>
+                            <div class="order-date">Fecha: ${new Date(order.fechaPedido).toLocaleString('es-ES')}</div>
                         </div>
-                        <div class="order-total">$${parseFloat(order.TOTAL).toFixed(2)}</div>
+                        <div class="order-total">$${parseFloat(order.total).toFixed(2)}</div>
                     </div>
                     ${detailsHtml}
                 </div>
@@ -464,11 +306,11 @@ async function loadOrders() {
     }).join('');
 }
 
-async function showOrderForm() {
+function showOrderForm() {
     document.getElementById('order-form-container').classList.remove('hidden');
     orderItems = [];
-    await loadClientsForOrder();
-    await loadProductsForOrder();
+    loadClientsForOrder();
+    loadProductsForOrder();
     updateOrderItemsDisplay();
 }
 
@@ -478,26 +320,16 @@ function hideOrderForm() {
     orderItems = [];
 }
 
-async function loadClientsForOrder() {
-    const { data } = await supabase
-        .from('CLIENTE_EM')
-        .select('*')
-        .order('NOMBRE', { ascending: true });
-
+function loadClientsForOrder() {
     const select = document.getElementById('order-client');
     select.innerHTML = '<option value="">Seleccionar cliente</option>' +
-        (data || []).map(c => `<option value="${c.ID}">${c.NOMBRE} ${c.APELLIDO}</option>`).join('');
+        clients.map(c => `<option value="${c.id}">${c.nombre} ${c.apellido}</option>`).join('');
 }
 
-async function loadProductsForOrder() {
-    const { data } = await supabase
-        .from('PRODUCTO_EM')
-        .select('*')
-        .order('NOMBRE', { ascending: true });
-
+function loadProductsForOrder() {
     const select = document.getElementById('order-product');
     select.innerHTML = '<option value="">Seleccionar producto</option>' +
-        (data || []).map(p => `<option value="${p.ID}" data-price="${p.PRECIO}">${p.NOMBRE} - $${parseFloat(p.PRECIO).toFixed(2)}</option>`).join('');
+        products.map(p => `<option value="${p.id}" data-price="${p.precio}">${p.nombre} - $${parseFloat(p.precio).toFixed(2)}</option>`).join('');
 }
 
 function addProductToOrder() {
@@ -556,51 +388,37 @@ function removeOrderItem(index) {
     updateOrderItemsDisplay();
 }
 
-async function handleOrderSubmit(e) {
+function handleOrderSubmit(e) {
     e.preventDefault();
 
-    const clientId = document.getElementById('order-client').value;
+    const clientId = parseInt(document.getElementById('order-client').value);
     
     if (!clientId || orderItems.length === 0) {
         alert('Selecciona un cliente y agrega al menos un producto');
         return;
     }
 
+    const client = clients.find(c => c.id === clientId);
+    if (!client) return;
+
     const total = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-    // Create order
-    const { data: orderData, error: orderError } = await supabase
-        .from('PEDIDO_EM')
-        .insert([{
-            CLIENTE_ID: parseInt(clientId),
-            TOTAL: total,
-            FECHAPEDIDO: new Date().toISOString()
-        }])
-        .select()
-        .single();
-
-    if (orderError) {
-        alert('Error al crear pedido: ' + orderError.message);
-        return;
-    }
-
-    // Create order details
-    const details = orderItems.map(item => ({
-        PEDIDO_ID: orderData.ID,
-        PRODUCTO_ID: item.productId,
-        CANTIDAD: item.quantity,
-        PRECIO_UNITARIO: item.price,
-        TOTAL: item.price * item.quantity
-    }));
-
-    const { error: detailsError } = await supabase
-        .from('DETALLE_PEDIDO_EM')
-        .insert(details);
-
-    if (detailsError) {
-        alert('Error al crear detalles del pedido: ' + detailsError.message);
-        return;
-    }
+    const newId = orders.length > 0 ? Math.max(...orders.map(o => o.id)) + 1 : 1;
+    
+    orders.push({
+        id: newId,
+        clienteId: clientId,
+        clienteNombre: `${client.nombre} ${client.apellido}`,
+        total: total,
+        fechaPedido: new Date().toISOString(),
+        detalles: orderItems.map(item => ({
+            productoId: item.productId,
+            productoNombre: item.name,
+            cantidad: item.quantity,
+            precioUnitario: item.price,
+            total: item.price * item.quantity
+        }))
+    });
 
     alert('Pedido registrado exitosamente');
     hideOrderForm();
@@ -608,33 +426,23 @@ async function handleOrderSubmit(e) {
 }
 
 // ============ VENDORS ============
-async function loadVendors() {
-    const { data, error } = await supabase
-        .from('VENDEDOR_EM')
-        .select('*')
-        .order('ID', { ascending: false });
-
+function loadVendors() {
     const container = document.getElementById('vendors-list');
     
-    if (error) {
-        container.innerHTML = '<div class="empty-state">Error al cargar vendedores</div>';
-        return;
-    }
-
-    if (!data || data.length === 0) {
+    if (vendors.length === 0) {
         container.innerHTML = '<div class="empty-state">No hay vendedores registrados</div>';
         return;
     }
 
-    container.innerHTML = data.map(vendor => `
+    container.innerHTML = vendors.map(vendor => `
         <div class="vendor-card">
             <div class="vendor-icon">👤</div>
             <div class="vendor-info">
-                <h3>${vendor.NOMBRE}</h3>
-                <div class="vendor-email">${vendor.EMAIL}</div>
-                <span class="vendor-role ${vendor.ROLE}">${vendor.ROLE === 'admin' ? 'Administrador' : 'Vendedor'}</span>
+                <h3>${vendor.nombre}</h3>
+                <div class="vendor-email">${vendor.email}</div>
+                <span class="vendor-role ${vendor.role}">${vendor.role === 'admin' ? 'Administrador' : 'Vendedor'}</span>
                 <div>
-                    <button class="btn btn-sm btn-danger" onclick="deleteVendor(${vendor.ID}, '${vendor.NOMBRE}')">🗑️ Eliminar</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteVendor(${vendor.id}, '${vendor.nombre}')">🗑️ Eliminar</button>
                 </div>
             </div>
         </div>
@@ -650,114 +458,68 @@ function hideVendorForm() {
     document.getElementById('vendor-form').reset();
 }
 
-async function handleVendorSubmit(e) {
+function handleVendorSubmit(e) {
     e.preventDefault();
 
     const name = document.getElementById('vendor-name').value;
     const email = document.getElementById('vendor-email').value;
-    const password = document.getElementById('vendor-password').value;
     const role = document.getElementById('vendor-role').value;
 
-    try {
-        // Create user in Supabase Auth
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-            email,
-            password
-        });
+    const newId = vendors.length > 0 ? Math.max(...vendors.map(v => v.id)) + 1 : 1;
+    
+    vendors.push({
+        id: newId,
+        nombre: name,
+        email: email,
+        role: role
+    });
 
-        if (authError) throw authError;
-
-        if (authData.user) {
-            // Create vendor entry
-            const { error: vendorError } = await supabase
-                .from('VENDEDOR_EM')
-                .insert([{
-                    USER_ID: authData.user.id,
-                    NOMBRE: name,
-                    EMAIL: email,
-                    ROLE: role
-                }]);
-
-            if (vendorError) throw vendorError;
-
-            alert('Vendedor creado exitosamente');
-            hideVendorForm();
-            loadVendors();
-        }
-    } catch (err) {
-        alert('Error al crear vendedor: ' + err.message);
-    }
+    alert('Vendedor creado exitosamente');
+    hideVendorForm();
+    loadVendors();
 }
 
-async function deleteVendor(id, name) {
+function deleteVendor(id, name) {
     if (confirm(`¿Estás seguro de eliminar a ${name}?`)) {
-        const { error } = await supabase
-            .from('VENDEDOR_EM')
-            .delete()
-            .eq('ID', id);
-
-        if (error) {
-            alert('Error al eliminar vendedor: ' + error.message);
-        } else {
-            alert('Vendedor eliminado exitosamente');
-            loadVendors();
-        }
+        vendors = vendors.filter(v => v.id !== id);
+        alert('Vendedor eliminado exitosamente');
+        loadVendors();
     }
 }
 
 // ============ REPORTS ============
-async function loadReports() {
-    await loadStats();
-    await loadTopProducts();
-    await loadRecentOrders();
+function loadReports() {
+    loadStats();
+    loadTopProducts();
+    loadRecentOrders();
 }
 
-async function loadStats() {
-    // Count products
-    const { count: productCount } = await supabase
-        .from('PRODUCTO_EM')
-        .select('*', { count: 'exact', head: true });
+function loadStats() {
+    const productCount = products.length;
+    const clientCount = clients.length;
+    const orderCount = orders.length;
+    const revenue = orders.reduce((sum, order) => sum + parseFloat(order.total), 0);
 
-    // Count clients
-    const { count: clientCount } = await supabase
-        .from('CLIENTE_EM')
-        .select('*', { count: 'exact', head: true });
-
-    // Count orders and calculate revenue
-    const { data: orders } = await supabase
-        .from('PEDIDO_EM')
-        .select('TOTAL');
-
-    const orderCount = orders?.length || 0;
-    const revenue = orders?.reduce((sum, order) => sum + parseFloat(order.TOTAL), 0) || 0;
-
-    document.getElementById('stat-products').textContent = productCount || 0;
-    document.getElementById('stat-clients').textContent = clientCount || 0;
+    document.getElementById('stat-products').textContent = productCount;
+    document.getElementById('stat-clients').textContent = clientCount;
     document.getElementById('stat-orders').textContent = orderCount;
     document.getElementById('stat-revenue').textContent = '$' + revenue.toFixed(2);
 }
 
-async function loadTopProducts() {
-    const { data } = await supabase
-        .from('DETALLE_PEDIDO_EM')
-        .select(`
-            PRODUCTO_ID,
-            CANTIDAD,
-            PRODUCTO_EM (NOMBRE)
-        `);
-
-    if (!data || data.length === 0) return;
-
+function loadTopProducts() {
     const productMap = {};
-    data.forEach(item => {
-        const id = item.PRODUCTO_ID;
-        if (!productMap[id]) {
-            productMap[id] = {
-                name: item.PRODUCTO_EM?.NOMBRE || 'Desconocido',
-                quantity: 0
-            };
-        }
-        productMap[id].quantity += item.CANTIDAD;
+    
+    orders.forEach(order => {
+        (order.detalles || []).forEach(item => {
+            const id = item.productoId;
+            if (!productMap[id]) {
+                productMap[id] = {
+                    name: item.productoNombre || 'Desconocido',
+                    quantity: 0
+                };
+            }
+            productMap[id].quantity += item.cantidad;
+        });
     });
 
     const topProducts = Object.values(productMap)
@@ -766,7 +528,7 @@ async function loadTopProducts() {
 
     // Bar Chart
     const ctx1 = document.getElementById('products-chart');
-    if (ctx1) {
+    if (ctx1 && topProducts.length > 0) {
         new Chart(ctx1, {
             type: 'bar',
             data: {
@@ -786,7 +548,7 @@ async function loadTopProducts() {
 
     // Pie Chart
     const ctx2 = document.getElementById('sales-chart');
-    if (ctx2) {
+    if (ctx2 && topProducts.length > 0) {
         new Chart(ctx2, {
             type: 'pie',
             data: {
@@ -810,30 +572,22 @@ async function loadTopProducts() {
     }
 }
 
-async function loadRecentOrders() {
-    const { data } = await supabase
-        .from('PEDIDO_EM')
-        .select(`
-            *,
-            CLIENTE_EM (NOMBRE, APELLIDO)
-        `)
-        .order('FECHAPEDIDO', { ascending: false })
-        .limit(5);
-
+function loadRecentOrders() {
     const container = document.getElementById('recent-orders');
+    const recentOrders = orders.slice(-5).reverse();
     
-    if (!data || data.length === 0) {
+    if (recentOrders.length === 0) {
         container.innerHTML = '<div class="empty-state">No hay pedidos recientes</div>';
         return;
     }
 
-    container.innerHTML = data.map(order => `
+    container.innerHTML = recentOrders.map(order => `
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f9fafb; border-radius: 6px; margin-bottom: 8px;">
             <div>
-                <p style="font-size: 14px;">Pedido #${order.ID} - ${order.CLIENTE_EM?.NOMBRE || ''} ${order.CLIENTE_EM?.APELLIDO || ''}</p>
-                <p style="font-size: 12px; color: #6b7280;">${new Date(order.FECHAPEDIDO).toLocaleString('es-ES')}</p>
+                <p style="font-size: 14px;">Pedido #${order.id} - ${order.clienteNombre || ''}</p>
+                <p style="font-size: 12px; color: #6b7280;">${new Date(order.fechaPedido).toLocaleString('es-ES')}</p>
             </div>
-            <span style="color: #16a34a; font-weight: 600;">$${parseFloat(order.TOTAL).toFixed(2)}</span>
+            <span style="color: #16a34a; font-weight: 600;">$${parseFloat(order.total).toFixed(2)}</span>
         </div>
     `).join('');
 }
