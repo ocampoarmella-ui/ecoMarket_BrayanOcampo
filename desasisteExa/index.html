@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoMarket - Sistema de Gestión</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Supabase JS Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Chart.js para reportes -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <!-- Pantalla de Login -->
+    <div id="login-screen" class="screen active">
+        <div class="login-container">
+            <div class="login-card">
+                <div class="login-header">
+                    <div class="logo">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                            <path d="M2 17l10 5 10-5"/>
+                            <path d="M2 12l10 5 10-5"/>
+                        </svg>
+                    </div>
+                    <h1>EcoMarket</h1>
+                    <p>Sistema de Gestión de Productos Ecológicos</p>
+                </div>
+                
+                <div class="login-body">
+                    <div id="login-tabs" class="tabs">
+                        <button class="tab-btn active" data-tab="login">Iniciar Sesión</button>
+                        <button class="tab-btn" data-tab="register">Registrarse</button>
+                    </div>
+
+                    <!-- Login Form -->
+                    <form id="login-form" class="tab-content active">
+                        <div class="form-group">
+                            <label for="login-email">Email</label>
+                            <input type="email" id="login-email" required placeholder="correo@ejemplo.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="login-password">Contraseña</label>
+                            <input type="password" id="login-password" required placeholder="••••••••">
+                        </div>
+                        <div id="login-error" class="error-message"></div>
+                        <button type="submit" class="btn btn-primary btn-full">Iniciar Sesión</button>
+                    </form>
+
+                    <!-- Register Form -->
+                    <form id="register-form" class="tab-content">
+                        <div class="form-group">
+                            <label for="register-name">Nombre Completo</label>
+                            <input type="text" id="register-name" required placeholder="Juan Pérez">
+                        </div>
+                        <div class="form-group">
+                            <label for="register-email">Email</label>
+                            <input type="email" id="register-email" required placeholder="correo@ejemplo.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="register-password">Contraseña</label>
+                            <input type="password" id="register-password" required placeholder="••••••••" minlength="6">
+                        </div>
+                        <div id="register-error" class="error-message"></div>
+                        <button type="submit" class="btn btn-primary btn-full">Registrarse</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pantalla Principal -->
+    <div id="main-screen" class="screen">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="header-left">
+                    <div class="logo-small">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                            <path d="M2 17l10 5 10-5"/>
+                            <path d="M2 12l10 5 10-5"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1>EcoMarket</h1>
+                        <p id="user-role-text">Panel Vendedor</p>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <span id="user-email" class="user-email"></span>
+                    <button id="logout-btn" class="btn btn-outline">Salir</button>
+                    <button id="menu-toggle" class="btn btn-outline mobile-only">☰</button>
+                </div>
+            </div>
+        </header>
+
+        <div class="main-container">
+            <!-- Sidebar -->
+            <aside id="sidebar" class="sidebar">
+                <nav class="nav">
+                    <button class="nav-item active" data-view="products">
+                        <span class="nav-icon">📦</span>
+                        <span>Productos</span>
+                    </button>
+                    <button class="nav-item" data-view="clients">
+                        <span class="nav-icon">👥</span>
+                        <span>Clientes</span>
+                    </button>
+                    <button class="nav-item" data-view="orders">
+                        <span class="nav-icon">🛒</span>
+                        <span>Pedidos</span>
+                    </button>
+                    <button class="nav-item admin-only" data-view="vendors">
+                        <span class="nav-icon">👤</span>
+                        <span>Vendedores</span>
+                    </button>
+                    <button class="nav-item admin-only" data-view="reports">
+                        <span class="nav-icon">📊</span>
+                        <span>Reportes</span>
+                    </button>
+                </nav>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="content">
+                <!-- Productos View -->
+                <div id="products-view" class="view active">
+                    <div class="view-header">
+                        <h2>Gestión de Productos</h2>
+                        <button id="add-product-btn" class="btn btn-primary">+ Agregar Producto</button>
+                    </div>
+
+                    <!-- Formulario Producto -->
+                    <div id="product-form-container" class="form-container hidden">
+                        <div class="card">
+                            <h3 id="product-form-title">Nuevo Producto</h3>
+                            <form id="product-form">
+                                <div class="form-group">
+                                    <label for="product-name">Nombre del Producto</label>
+                                    <input type="text" id="product-name" required placeholder="Ej: Manzanas Orgánicas">
+                                </div>
+                                <div class="form-group">
+                                    <label for="product-description">Descripción</label>
+                                    <textarea id="product-description" rows="3" placeholder="Descripción del producto"></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label for="product-price">Precio ($)</label>
+                                    <input type="number" id="product-price" step="0.01" required placeholder="0.00">
+                                </div>
+                                <div class="form-actions">
+                                    <button type="submit" class="btn btn-primary">Guardar</button>
+                                    <button type="button" id="cancel-product-btn" class="btn btn-outline">Cancelar</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Lista de Productos -->
+                    <div id="products-list" class="grid"></div>
+                </div>
+
+                <!-- Clientes View -->
+                <div id="clients-view" class="view">
+                    <div class="view-header">
+                        <h2>Gestión de Clientes</h2>
+                        <button id="add-client-btn" class="btn btn-primary">+ Registrar Cliente</button>
+                    </div>
+
+                    <!-- Formulario Cliente -->
+                    <div id="client-form-container" class="form-container hidden">
+                        <div class="card">
+                            <h3>Nuevo Cliente</h3>
+                            <form id="client-form">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="client-name">Nombre</label>
+                                        <input type="text" id="client-name" required placeholder="Juan">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="client-lastname">Apellido</label>
+                                        <input type="text" id="client-lastname" required placeholder="Pérez">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="client-phone">Teléfono</label>
+                                    <input type="text" id="client-phone" placeholder="123456789">
+                                </div>
+                                <div class="form-actions">
+                                    <button type="submit" class="btn btn-primary">Guardar</button>
+                                    <button type="button" id="cancel-client-btn" class="btn btn-outline">Cancelar</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Lista de Clientes -->
+                    <div id="clients-list" class="grid"></div>
+                </div>
+
+                <!-- Pedidos View -->
+                <div id="orders-view" class="view">
+                    <div class="view-header">
+                        <h2>Gestión de Pedidos</h2>
+                        <button id="add-order-btn" class="btn btn-primary">+ Nuevo Pedido</button>
+                    </div>
+
+                    <!-- Formulario Pedido -->
+                    <div id="order-form-container" class="form-container hidden">
+                        <div class="card">
+                            <h3>Nuevo Pedido</h3>
+                            <form id="order-form">
+                                <div class="form-group">
+                                    <label for="order-client">Cliente</label>
+                                    <select id="order-client" required>
+                                        <option value="">Seleccionar cliente</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="order-product">Agregar Producto</label>
+                                    <select id="order-product">
+                                        <option value="">Seleccionar producto</option>
+                                    </select>
+                                </div>
+                                <div id="order-items" class="order-items"></div>
+                                <div class="form-actions">
+                                    <button type="submit" class="btn btn-primary">Crear Pedido</button>
+                                    <button type="button" id="cancel-order-btn" class="btn btn-outline">Cancelar</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Lista de Pedidos -->
+                    <div id="orders-list" class="list"></div>
+                </div>
+
+                <!-- Vendedores View -->
+                <div id="vendors-view" class="view admin-only">
+                    <div class="view-header">
+                        <h2>Gestión de Vendedores</h2>
+                        <button id="add-vendor-btn" class="btn btn-primary">+ Agregar Vendedor</button>
+                    </div>
+
+                    <!-- Formulario Vendedor -->
+                    <div id="vendor-form-container" class="form-container hidden">
+                        <div class="card">
+                            <h3>Nuevo Vendedor</h3>
+                            <form id="vendor-form">
+                                <div class="form-group">
+                                    <label for="vendor-name">Nombre Completo</label>
+                                    <input type="text" id="vendor-name" required placeholder="Juan Pérez">
+                                </div>
+                                <div class="form-group">
+                                    <label for="vendor-email">Email</label>
+                                    <input type="email" id="vendor-email" required placeholder="vendedor@ejemplo.com">
+                                </div>
+                                <div class="form-group">
+                                    <label for="vendor-password">Contraseña</label>
+                                    <input type="password" id="vendor-password" required placeholder="Mínimo 6 caracteres" minlength="6">
+                                </div>
+                                <div class="form-group">
+                                    <label for="vendor-role">Rol</label>
+                                    <select id="vendor-role" required>
+                                        <option value="vendedor">Vendedor</option>
+                                        <option value="admin">Administrador</option>
+                                    </select>
+                                </div>
+                                <div class="form-actions">
+                                    <button type="submit" class="btn btn-primary">Crear Vendedor</button>
+                                    <button type="button" id="cancel-vendor-btn" class="btn btn-outline">Cancelar</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Lista de Vendedores -->
+                    <div id="vendors-list" class="grid"></div>
+                </div>
+
+                <!-- Reportes View -->
+                <div id="reports-view" class="view admin-only">
+                    <h2>Reportes y Estadísticas</h2>
+                    
+                    <!-- Stats Cards -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">📦</div>
+                            <div class="stat-info">
+                                <p class="stat-label">Total Productos</p>
+                                <p class="stat-value" id="stat-products">0</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">👥</div>
+                            <div class="stat-info">
+                                <p class="stat-label">Total Clientes</p>
+                                <p class="stat-value" id="stat-clients">0</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">🛒</div>
+                            <div class="stat-info">
+                                <p class="stat-label">Total Pedidos</p>
+                                <p class="stat-value" id="stat-orders">0</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">💰</div>
+                            <div class="stat-info">
+                                <p class="stat-label">Ingresos Totales</p>
+                                <p class="stat-value" id="stat-revenue">$0.00</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts -->
+                    <div class="charts-grid">
+                        <div class="card">
+                            <h3>Top 5 Productos Más Vendidos</h3>
+                            <canvas id="products-chart"></canvas>
+                        </div>
+                        <div class="card">
+                            <h3>Distribución de Ventas</h3>
+                            <canvas id="sales-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Recent Orders -->
+                    <div class="card">
+                        <h3>Pedidos Recientes</h3>
+                        <div id="recent-orders"></div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
