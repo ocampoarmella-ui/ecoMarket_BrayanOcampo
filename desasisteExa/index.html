@@ -4,73 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EcoMarket - Sistema de Gestión</title>
-    <link rel="stylesheet" href="styles.css">
-    <!-- Supabase JS Library -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="ecomar.css">
     <!-- Chart.js para reportes -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
-    <!-- Pantalla de Login -->
-    <div id="login-screen" class="screen active">
-        <div class="login-container">
-            <div class="login-card">
-                <div class="login-header">
-                    <div class="logo">
-                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                            <path d="M2 17l10 5 10-5"/>
-                            <path d="M2 12l10 5 10-5"/>
-                        </svg>
-                    </div>
-                    <h1>EcoMarket</h1>
-                    <p>Sistema de Gestión de Productos Ecológicos</p>
-                </div>
-                
-                <div class="login-body">
-                    <div id="login-tabs" class="tabs">
-                        <button class="tab-btn active" data-tab="login">Iniciar Sesión</button>
-                        <button class="tab-btn" data-tab="register">Registrarse</button>
-                    </div>
-
-                    <!-- Login Form -->
-                    <form id="login-form" class="tab-content active">
-                        <div class="form-group">
-                            <label for="login-email">Email</label>
-                            <input type="email" id="login-email" required placeholder="correo@ejemplo.com">
-                        </div>
-                        <div class="form-group">
-                            <label for="login-password">Contraseña</label>
-                            <input type="password" id="login-password" required placeholder="••••••••">
-                        </div>
-                        <div id="login-error" class="error-message"></div>
-                        <button type="submit" class="btn btn-primary btn-full">Iniciar Sesión</button>
-                    </form>
-
-                    <!-- Register Form -->
-                    <form id="register-form" class="tab-content">
-                        <div class="form-group">
-                            <label for="register-name">Nombre Completo</label>
-                            <input type="text" id="register-name" required placeholder="Juan Pérez">
-                        </div>
-                        <div class="form-group">
-                            <label for="register-email">Email</label>
-                            <input type="email" id="register-email" required placeholder="correo@ejemplo.com">
-                        </div>
-                        <div class="form-group">
-                            <label for="register-password">Contraseña</label>
-                            <input type="password" id="register-password" required placeholder="••••••••" minlength="6">
-                        </div>
-                        <div id="register-error" class="error-message"></div>
-                        <button type="submit" class="btn btn-primary btn-full">Registrarse</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Pantalla Principal -->
-    <div id="main-screen" class="screen">
+    <div id="main-screen" class="screen active">
         <!-- Header -->
         <header class="header">
             <div class="header-content">
@@ -84,12 +24,11 @@
                     </div>
                     <div>
                         <h1>EcoMarket</h1>
-                        <p id="user-role-text">Panel Vendedor</p>
+                        <p id="user-role-text">Panel Administrador</p>
                     </div>
                 </div>
                 <div class="header-right">
-                    <span id="user-email" class="user-email"></span>
-                    <button id="logout-btn" class="btn btn-outline">Salir</button>
+                    <span id="user-email" class="user-email">admin@ecomarket.com</span>
                     <button id="menu-toggle" class="btn btn-outline mobile-only">☰</button>
                 </div>
             </div>
@@ -111,11 +50,11 @@
                         <span class="nav-icon">🛒</span>
                         <span>Pedidos</span>
                     </button>
-                    <button class="nav-item admin-only" data-view="vendors">
+                    <button class="nav-item" data-view="vendors">
                         <span class="nav-icon">👤</span>
                         <span>Vendedores</span>
                     </button>
-                    <button class="nav-item admin-only" data-view="reports">
+                    <button class="nav-item" data-view="reports">
                         <span class="nav-icon">📊</span>
                         <span>Reportes</span>
                     </button>
@@ -236,7 +175,7 @@
                 </div>
 
                 <!-- Vendedores View -->
-                <div id="vendors-view" class="view admin-only">
+                <div id="vendors-view" class="view">
                     <div class="view-header">
                         <h2>Gestión de Vendedores</h2>
                         <button id="add-vendor-btn" class="btn btn-primary">+ Agregar Vendedor</button>
@@ -254,10 +193,6 @@
                                 <div class="form-group">
                                     <label for="vendor-email">Email</label>
                                     <input type="email" id="vendor-email" required placeholder="vendedor@ejemplo.com">
-                                </div>
-                                <div class="form-group">
-                                    <label for="vendor-password">Contraseña</label>
-                                    <input type="password" id="vendor-password" required placeholder="Mínimo 6 caracteres" minlength="6">
                                 </div>
                                 <div class="form-group">
                                     <label for="vendor-role">Rol</label>
@@ -279,7 +214,7 @@
                 </div>
 
                 <!-- Reportes View -->
-                <div id="reports-view" class="view admin-only">
+                <div id="reports-view" class="view">
                     <h2>Reportes y Estadísticas</h2>
                     
                     <!-- Stats Cards -->
@@ -336,6 +271,6 @@
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <script src="ecomar.js"></script>
 </body>
 </html>
